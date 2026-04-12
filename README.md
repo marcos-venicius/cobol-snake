@@ -33,7 +33,7 @@ I just a call to `system` once, `CALL "SYSTEM" USING "clear"`.
 
 Here is an example of the game running:
 
-![](./examples/example.mp4)
+![Video Example](./examples/example.mp4)
 
 
 
