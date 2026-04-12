@@ -49,6 +49,12 @@
       * Linux specific
                CALL "SYSTEM" USING "clear"
 
+               IF SNAKE-SIZE >= 3
+                 DISPLAY "You won everything with " POINTS " points!!!"
+                 MOVE 0 TO RETURN-CODE
+                 STOP RUN
+               END-IF
+
                PERFORM 0001-MOVEMENT-INPUT-LOGIC
                PERFORM 0001-AUTO-MOVEMENT-LOGIC
                PERFORM 0001-UPDATE-SNAKE-POSITIONS-LOGIC
