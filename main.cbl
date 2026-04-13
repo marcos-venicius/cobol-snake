@@ -23,6 +23,7 @@
        01 NEXT-PLAYER-Y          PIC S9(1) VALUE 0.
        01 FRUIT-X                PIC S9(2) VALUE 5.
        01 FRUIT-Y                PIC S9(2) VALUE 5.
+       01 FRUIT-LIFETIME         PIC S9(3) VALUE 0.
        01 L-ROW                  PIC 9(2)  VALUE 0.
        01 L-COL                  PIC 9(2)  VALUE 0.
        01 POINTS                 PIC 9(3)  VALUE 0.
@@ -37,19 +38,31 @@
        01 TAIL-X                 PIC 9(2)  VALUE 0.
        01 TAIL-Y                 PIC 9(2)  VALUE 0.
        01 RENDERED               PIC 9(1)  VALUE 0.
+       01 START-TIMESTAMP        PIC 9(14).
+       01 START-DATETIME         PIC X(21).
 
        PROCEDURE DIVISION.
        0001-MAIN-LOGIC.
-           MOVE 0 TO SNAKE-CELL(1)
+           PERFORM 0001-SPAWN-FRUIT.
+
+           PERFORM 0001-CURRENT-TIME.
+
+           COMPUTE PLAYER-X = 
+           FUNCTION INTEGER 
+           ( (GRID-WIDTH - 1) * FUNCTION RANDOM(START-TIMESTAMP) ) + 1.
+
+           COMPUTE PLAYER-Y = 
+           FUNCTION INTEGER 
+           ( (GRID-HEIGHT - 1) * FUNCTION RANDOM(START-TIMESTAMP) ) + 1.
+
+           COMPUTE SNAKE-CELL(1) = (PLAYER-X * 16) + PLAYER-Y.
 
            PERFORM UNTIL 1 < 0
-             SET SNAKE-IDX TO 1
-
              IF RENDER-CONTROL = 0
       * Linux specific
                CALL "SYSTEM" USING "clear"
 
-               IF SNAKE-SIZE >= 3
+               IF SNAKE-SIZE >= (GRID-WIDTH * GRID-HEIGHT)
                  DISPLAY "You won everything with " POINTS " points!!!"
                  MOVE 0 TO RETURN-CODE
                  STOP RUN
@@ -61,10 +74,10 @@
                PERFORM 0001-GAME-LOOP
              END-IF
 
-             ADD 1 TO RENDER-CONTROL
-
              IF RENDER-CONTROL = FRAMES-BETWEEN-RENDER
                MOVE 0 TO RENDER-CONTROL
+             ELSE
+               ADD 1 TO RENDER-CONTROL
              END-IF
            END-PERFORM.
 
@@ -97,8 +110,6 @@
                  END-IF
                END-PERFORM
 
-
-
                IF RENDERED = 0
                  IF FRUIT-X <> -1 OR FRUIT-Y <> -1
                    IF L-ROW = FRUIT-Y AND L-COL = FRUIT-X
@@ -119,6 +130,12 @@
              END-PERFORM
              DISPLAY SPACES
            END-PERFORM.
+
+           IF FRUIT-LIFETIME <= 0
+             PERFORM 0001-SPAWN-FRUIT
+           END-IF.
+
+           ADD -1 TO FRUIT-LIFETIME.
 
            DISPLAY " ".
            DISPLAY "POINTS: " POINTS.
@@ -174,12 +191,13 @@
            MOVE NEXT-PLAYER-Y TO PLAYER-Y.
 
        0001-UPDATE-SNAKE-POSITIONS-LOGIC.
-           PERFORM VARYING SNAKE-IDX FROM SNAKE-SIZE BY -1 
-             UNTIL SNAKE-IDX = 1
+           IF SNAKE-SIZE > 1
+             PERFORM VARYING SNAKE-IDX FROM SNAKE-SIZE BY -1 
+               UNTIL SNAKE-IDX <= 1
 
-             MOVE SNAKE-CELL(SNAKE-IDX - 1) TO SNAKE-CELL(SNAKE-IDX)
-
-           END-PERFORM.
+               MOVE SNAKE-CELL(SNAKE-IDX - 1) TO SNAKE-CELL(SNAKE-IDX)
+             END-PERFORM
+           END-IF.
 
            COMPUTE SNAKE-CELL(1) = (PLAYER-X * 16) + PLAYER-Y.
 
@@ -195,11 +213,20 @@
            COMPUTE SNAKE-CELL(SNAKE-SIZE) = (TAIL-X * 16) + TAIL-Y.
 
        0001-SPAWN-FRUIT.
+           PERFORM 0001-CURRENT-TIME.
+
            COMPUTE FRUIT-X = 
            FUNCTION INTEGER 
-           ( (GRID-WIDTH - 1) * FUNCTION RANDOM ) + 1.
+           ( (GRID-WIDTH - 1) * FUNCTION RANDOM(START-TIMESTAMP) ) + 1.
 
            COMPUTE FRUIT-Y = 
            FUNCTION INTEGER 
-           ( (GRID-HEIGHT - 1) * FUNCTION RANDOM ) + 1.
+           ( (GRID-HEIGHT - 1) * FUNCTION RANDOM(START-TIMESTAMP) ) + 1.
 
+           COMPUTE PLAYER-X = SNAKE-CELL(1) / 16.
+           COMPUTE PLAYER-Y = FUNCTION MOD(SNAKE-CELL(1), 16).
+           COMPUTE FRUIT-LIFETIME = GRID-WIDTH * GRID-HEIGHT * 0.5.
+
+       0001-CURRENT-TIME.
+           MOVE FUNCTION CURRENT-DATE TO START-DATETIME.
+           MOVE START-DATETIME(1:14) TO START-TIMESTAMP.
